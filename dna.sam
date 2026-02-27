@@ -1,0 +1,66 @@
+# ═════════════════════════════════════════════════════════════
+#  ASMurai ⛩️ - Simulazione DNA 3D (0% CPU Usage)
+# ═════════════════════════════════════════════════════════════
+
+frame = 0
+
+echo "Decodifica Genoma in corso..."
+echo "Premere Ctrl+C per interrompere."
+echo " "
+
+label loop_infinito
+
+    q = frame / 14
+    p = q * 14
+    mod = frame - p
+
+    if mod == 0
+        echo "        ▓▓▓▓▓-----------░░░░░        "
+    end
+    if mod == 1
+        echo "          ▓▓▓▓▓-------░░░░░          "
+    end
+    if mod == 2
+        echo "            ▓▓▓▓▓---░░░░░            "
+    end
+    if mod == 3
+        echo "              ▓▓▓░░░░░               "
+    end
+    if mod == 4
+        echo "            ░░░░░---▓▓▓▓▓            "
+    end
+    if mod == 5
+        echo "          ░░░░░-------▓▓▓▓▓          "
+    end
+    if mod == 6
+        echo "        ░░░░░-----------▓▓▓▓▓        "
+    end
+    if mod == 7
+        echo "      ░░░░░---------------▓▓▓▓▓      "
+    end
+    if mod == 8
+        echo "        ░░░░░-----------▓▓▓▓▓        "
+    end
+    if mod == 9
+        echo "          ░░░░░-------▓▓▓▓▓          "
+    end
+    if mod == 10
+        echo "            ░░░░░---▓▓▓▓▓            "
+    end
+    if mod == 11
+        echo "              ░░░▓▓▓▓▓               "
+    end
+    if mod == 12
+        echo "            ▓▓▓▓▓---░░░░░            "
+    end
+    if mod == 13
+        echo "          ▓▓▓▓▓-------░░░░░          "
+    end
+
+    # Dormiamo per 60 millisecondi (usa 0% CPU!)
+    # Puoi cambiare questo valore per regolarne la fluidità.
+    sleep 40
+
+    frame = frame + 1
+
+    goto loop_infinito

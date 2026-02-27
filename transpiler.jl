@@ -184,6 +184,10 @@ struct InlineAsm <: ASTNode
     code::Vector{String}
 end
 
+struct SleepNode <: ASTNode
+    ms::String
+end
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
@@ -262,6 +266,11 @@ function parse_line_simple(line::AbstractString)
         end
     end
 
+
+    # ── sleep [NUOVO] ────────────────────────────────────────────────────────
+    if startswith(line, "sleep ")
+        return SleepNode(String(strip(line[7:end])))
+    end
     # ── *ptr = src  (deref write) ─────────────────────────────────────────────
     if startswith(line, "*")
         m = match(r"^\*(\w+)\s*=\s*(.+)$", line)
@@ -661,7 +670,8 @@ function emit_nodes!(lines::Vector{String}, nodes::Vector{ASTNode}, st::CodegenS
         # ── echo "stringa" ────────────────────────────────────────────────────
         elseif node isa EchoStr
             lbl = st.strings[node.text]
-            len = length(node.text) + 1   # +1 per '\n' in .data
+            # [FIX CRUCIALE]: Usiamo sizeof() per contare i BYTE in memoria, non i caratteri!
+            len = sizeof(node.text) + 1   
             push!(lines, "    ; echo \"$(node.text)\"")
             push!(lines, "    lea    rcx, [rel $lbl]")
             push!(lines, "    mov    rdx, $len")
@@ -732,6 +742,14 @@ function emit_nodes!(lines::Vector{String}, nodes::Vector{ASTNode}, st::CodegenS
                 push!(lines, "    $asml")
             end
             push!(lines, "    ; ────────────────")
+
+        # ── sleep ─────────────────────────────────────────────────────────────
+        elseif node isa SleepNode
+            push!(lines, "    ; sleep $(node.ms) ms")
+            push_nonempty!(lines, load_into("rcx", node.ms))
+            push!(lines, "    sub    rsp, 40")
+            push!(lines, "    call   Sleep")
+            push!(lines, "    add    rsp, 40")
         end
     end
 end
@@ -750,12 +768,20 @@ _t_init:
     push   rbp
     mov    rbp, rsp
     sub    rsp, 32
+
+    ; --- NOVITA': Forza la console Windows in modalità UTF-8 (Code Page 65001) ---
+    mov    rcx, 65001
+    call   SetConsoleOutputCP
+
+    ; --- Prende l'handle di output per stampare a schermo ---
     mov    rcx, -11                 ; STD_OUTPUT_HANDLE
     call   GetStdHandle
     mov    [rel _t_hout], rax
+    
     mov    rsp, rbp
     pop    rbp
     ret
+
 
 ; rcx = puntatore stringa, rdx = numero caratteri
 _t_print_str:
@@ -852,6 +878,8 @@ function emit_text_section(nodes::Vector{ASTNode}, st::CodegenState)
     if st.need_print
         push!(extern_decls, "    extern GetStdHandle")
         push!(extern_decls, "    extern WriteConsoleA")
+        push!(extern_decls, "    extern SetConsoleOutputCP")
+        push!(extern_decls, "    extern Sleep")               # <--- AGGIUNGI QUESTA
     end
 
     lines = String[
